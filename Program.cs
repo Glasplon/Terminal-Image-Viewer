@@ -17,8 +17,11 @@ class Program
     static bool SimColorOptimizer = false;
     static bool LineOptimizer = true;
     static bool HalfSizePixels = false;
+    static bool MaxWidth = false;
 
-    static int incrementer = 1;
+    static string currentFilePath;
+
+    static int incrementer = 1; //needed when two pixel lines are drawn in one character line, then its set to 2.
 
     static void Main(string[] args)
     {
@@ -28,35 +31,26 @@ class Program
             Console.WriteLine("Try: TermImageView help");
             return;
         }
-        string filePath = args[0];
 
-        if (filePath == "help" || filePath == "h" || filePath == "settings")
+        if ( args[0] == "help" ||  args[0] == "h" ||  args[0] == "settings")
         {
             Console.WriteLine($"this is not done yet.");
+            Console.WriteLine("\e[38;2;255;255;0mS\e[38;2;200;255;0mA\e[38;2;150;255;0mM\e[38;2;100;255;0mP\e[38;2;50;255;0mL\e[38;2;0;255;0mE\e[38;2;0;255;100mT\e[38;2;0;255;150mE\e[38;2;0;255;200mX\e[38;2;0;200;255mT\e[0m");
             return;
         }
-
-        Console.WriteLine($"You passed: {filePath}");
-        if (!File.Exists(filePath))
-        {
-            Console.WriteLine("File not found.");
-            return;
-        }
-
-        Image<Rgba32> image = Image.Load<Rgba32>(filePath);
 
         widthChar = Console.WindowWidth;
     
-        foreach (string arg in args.Skip(1))
+        foreach (string arg in args)
         {
             if (arg == "c" || arg == "-c")
             {
                 Console.WriteLine("drawing with color");
-                withColor = true;
+                withColor = !withColor;
             } else if (arg == "o" || arg == "-o")
             {
                 Console.WriteLine("drawing with original size, may not wrap correctly!");
-                widthChar = image.Width;
+                MaxWidth = true;
             }
             else if (arg == "e" || arg == "-e")
             {
@@ -68,7 +62,7 @@ class Program
                 Console.WriteLine("single char write");
                 LineOptimizer = false;
             }
-            else if (arg == "h" || arg == "-h")
+            else if (arg == "b" || arg == "-b")
             {
                 Console.WriteLine("using Half Size Pixel Write");
                 HalfSizePixels = true;
@@ -87,6 +81,32 @@ class Program
                 //Console.WriteLine("single char write");
                 //LineOptimizer = false;
             }
+            else if (File.Exists(arg))
+            {
+                currentFilePath = arg;
+                Console.WriteLine($"You passed: {currentFilePath}");
+            } else
+            {
+                Console.WriteLine("File not found, Exiting");
+                Console.WriteLine(arg);
+                return;
+            }
+        }
+
+        if (currentFilePath == null)
+        {
+            Console.WriteLine("No file found");
+            Console.WriteLine("Usage: TermImageView <image-file>");
+            Console.WriteLine("Try: TermImageView help");
+            Console.WriteLine("Exiting.");
+            return;
+        }
+
+        Image<Rgba32> image = Image.Load<Rgba32>(currentFilePath);
+
+        if (MaxWidth)
+        {
+            widthChar = image.Width;
         }
 
 
@@ -119,35 +139,30 @@ class Program
                 string TMPlineString = "";
                 for (int x = 0; x < widthChar; x++)
                 {
-                    // Access or modify pixels directly in the Span
                     ref Rgba32 pixel = ref pixelRow[(int)((x/(float)widthChar)*image.Width)];
                     ref Rgba32 pixelUnder = ref pixelRowUnder[(int)((x/(float)widthChar)*image.Width)];
-                    //ref Rgba32 pixelN1 = ref pixelRow[(int)((x/(float)widthChar)*image.Width)+1];
-                    //if (SimColorOptimizer)
-                    //{
-                    //    //ref Rgba32 pixelN2 = ref pixelRow[(int)((x/(float)widthChar)*image.Width)+2];
-                    //}
-                    //float bright = Math.Clamp((pixel.R+pixel.G+pixel.B)/3f,0,255);
+
+
+                    //if drawing with color:
                     if (withColor) /// change system, only one draw / one TMPlineString add, so differance is in line optimization and not in draw type? string that saves whatever the string should be?
                     {   
                         string thisPixelDrawString = "";
-                        if (HalfSizePixels)
-                        {
+                        if (HalfSizePixels) {
                             thisPixelDrawString = stringTextColorDuo("▀",pixel.R, pixel.G, pixel.B, pixelUnder.R, pixelUnder.G, pixelUnder.B);
-                        } else
-                        {
+                        } else {
                             thisPixelDrawString = stringTextColor("█", pixel.R, pixel.G, pixel.B);
                         }
+
                         if(LineOptimizer)
                         {
-                            //TMPlineString += stringTextColor("██", (pixel.R+pixelN1.R)/2, (pixel.G+pixelN1.G)/2, (pixel.B+pixelN1.B)/2);
-                            //x++;
-                            //TMPlineString += stringTextColor("▄", pixel.R, pixel.G, pixel.B);
                             TMPlineString += thisPixelDrawString;
                         } else
                         {
                             Console.Write(thisPixelDrawString);
                         }
+
+
+
                     } else {
                         float bright = 0.299f * pixel.R + 0.587f * pixel.G + 0.114f * pixel.B;
                         if(LineOptimizer)
@@ -159,7 +174,8 @@ class Program
                             Console.Write(Grad[(Grad.Length - 1)-(int)((Grad.Length - 1)*(bright/255f))]); 
                         }
                     }
-                        //writeTextColor(Grad[(Grad.Length - 1)-(int)((Grad.Length - 1)*(bright/255f))], pixel.R, pixel.G, pixel.B);
+
+                    //writeTextColor(Grad[(Grad.Length - 1)-(int)((Grad.Length - 1)*(bright/255f))], pixel.R, pixel.G, pixel.B);
 
                     //Console.Write(bright);
                     //Console.Write(" ");
@@ -173,23 +189,19 @@ class Program
                     Console.WriteLine("");
                 }
             }
-            //Console.WriteLine(Grad.Length);
-            //Console.WriteLine(Grad);
-            //Console.WriteLine(heightChar);
         });
     }
 
-    static void writeTextColor(string c, int R, int G, int B)
+    /*static void writeTextColor(string c, int R, int G, int B)
     {
         Console.Write($"\u001b[38;2;{R};{G};{B}m{c}\u001b[0m");
-    }
+    }*/
     static string stringTextColor(string c, int R, int G, int B)
     {
         return $"\u001b[38;2;{R};{G};{B}m{c}\u001b[0m";
     }
     static string stringTextColorDuo(string c, int R1, int G1, int B1, int R2, int G2, int B2)
     {
-        //return $"\u001b[38;2;{R};{G};{B}m{c}\u001b[0m";
         return $"\u001b[38;2;{R1};{G1};{B1}m\u001b[48;2;{R2};{G2};{B2}m{c}\u001b[0m";
     }
 }
