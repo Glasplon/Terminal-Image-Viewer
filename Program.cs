@@ -5,6 +5,8 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Advanced;
 using System.Threading.Tasks;
 
+
+#nullable disable
 class Program
 {
     //static string Grad = @"$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\|()1{}[]?-_+~<>i!lI;:,""^`',. ";
